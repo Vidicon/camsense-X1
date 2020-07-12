@@ -20,7 +20,7 @@ still not fully known...
 
 <0x55><0xAA><0x03><0x08><br>
 \<speedL>\<speedH><br>
-\<unknown>\<unknown><br>
+\<startAngleL>\<startAngleH><br>
 \<distance0L>\<distance0H>\<quality0><br>
 \<distance1L>\<distance1H>\<quality1><br>
 \<distance2L>\<distance2H>\<quality2><br>
@@ -29,5 +29,9 @@ still not fully known...
 \<distance5L>\<distance5H>\<quality5><br>
 \<distance6L>\<distance6H>\<quality6><br>
 \<distance7L>\<distance7H>\<quality7><br>
-\<unknown>\<unknown><br>
-\<unknown>\<unknown><br>
+\<endAngleL>\<endAngleH><br>
+\<unknown>\<unknown> could be a CRC<br>
+
+```c++
+ float startAngle = (data [7] << 8 | data [6]) / 64.0 - 640.0;
+```
