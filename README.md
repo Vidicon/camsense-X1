@@ -3,6 +3,12 @@ unofficial reverse engineering of a Chinese LiDAR.
 
 Discussed this on my discord: https://discord.gg/zRGJcqa
 
+ROS1 driver for the camsense-X1: https://github.com/Vidicon/camsense_driver Made by [Vidicon](https://github.com/vidicon) (Bram Fenijn) <br>
+ROS2 driver for the camsense-X1: https://github.com/rossihwang/ros2_camsense_x1 Made by [rossihwang](https://github.com/rossihwang)
+
+implementation for a STM32: https://github.com/anhui1995/Camsense_X1
+
+
 ![alt text](doc/camsense2.jpg)
 ![alt text](doc/camsense.jpg)
 
