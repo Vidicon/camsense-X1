@@ -15,17 +15,25 @@ Read the LiDAR with a M5Stack: https://github.com/yishii/LiDAR_Camsense_X1_M5Sta
 ![alt text](doc/camsense2.jpg)
 ![alt text](doc/camsense.jpg)
 
+## Dimensions
+
+The dimensions(mm) of the Camsense-x1 mounting holes:
+![alt text](doc/Dimensions.PNG)
+
+I have made a 3d model of the LiDAR: [stl](Camsense_X1.stl), [step](camsense_x1.step)  (Dimensions are approximate)
 
 ## Electrical Connections
 There are 3 pins needed to connect to the lidar: 5V, GND and TX. For this you can use the mounted connector(part number unknown) or solder some pinheader to the pcb.
 
-A FTDI adapter is used to connect the lidar to a computer. The TX pin of the lidar needs to be connected to the RX pin of th FTDI adapter. The lidar can be powered using the 5V of the FTDI adapter.
+The tx pin sends serial data with 115200 baud at a signal level of 3.3v This make the lidar safe to be connected directly to a 3.3v microcontroller of SBC like the STM32 or Raspberry Pi 
+
+A FTDI adapter can be used to connect the LiDAR to a computer. The TX pin of the LiDAR needs to be connected to the RX pin of th FTDI adapter. The LiDAR can be powered using the 5V of the FTDI adapter. 
 
 ![alt text](doc/lidar_wiring.png "Connection diagram")
 
 ## Communication Protocol
 
-still not fully known...
+The lidar sends on average 50 packages per rotation of the sensor. A package is always 36 bytes and has the following format:
 
 <0x55><0xAA><0x03><0x08><br>
 \<speedL>\<speedH><br>
@@ -41,6 +49,56 @@ still not fully known...
 \<endAngleL>\<endAngleH><br>
 \<unknown>\<unknown> could be a CRC<br>
 
+A package always starts with <0x55><0xAA><0x03><0x08><br>
+
+Calculate rotation speed in hz:
 ```c++
- float startAngle = (data [7] << 8 | data [6]) / 64.0 - 640.0;
+float Hz = ((uint16_t) (speedH << 8) | speedL) / 3840.0; // 3840.0 = (64 * 60)
 ```
+Calculate start and end Angle in degrees:
+```c++
+ float startAngle = (startAngleH << 8 | startAngleL) / 64.0 - 640.0;
+ float endAngle   = (endAngleH   << 8 | endAngleL)   / 64.0 - 640.0;
+```
+
+Best method we found to calculate index and parse data to array:
+```c++
+float offset_ = 16.0; // 0 degrees seems to be 16 degrees of center.
+const float IndexMultiplier = 400 / 360.0;
+
+float step = 0.0;
+if(endAngle > startAngle)
+{
+    step = (endAngle - startAngle) / 8; 
+}
+else
+{
+    step = (endAngle - (startAngle - 360)) / 8; 
+}
+
+for(int i = 0; i < 8; i++) // for each of the 8 samples
+{
+    float sampleAngle = (startAngle + step * i) + (offset_ + 180);
+    float sampleIndexFloat = sampleAngle * IndexMultiplier; // map 0-360 to 0-400
+    int sampleIndex = round(sampleIndexFloat); // round to closest value.
+    index = sampleIndex % 400; // limit sampleIndex between 0 and 399 to prevent segmentation fault
+    
+    uint8_t distanceL = data[8+(i*3)];
+    uint8_t distanceH = data[9+(i*3)];
+    uint8_t quality = data[10+(i*3)];
+    
+    
+    if(quality == 0) // invalid data
+    {
+      distanceArray[index] = 0;
+      qualityArray[index] = 0;
+    }
+    else
+    {
+      distanceArray[index] = ((uint16_t) distanceH << 8) | distanceL;
+      qualityArray[index] = quality;
+    }
+}
+```
+
+
